@@ -1,5 +1,5 @@
 name: to-table
-revision: 0.1
+revision: 0.1.1
 summary: to-table is method designed for parsing structured files (e.g. XML, JSON, YAML...) into standardized tables (relations)
 
 key capability of to-table method is to parse, translate and store content of many files into data structure which allows to:
@@ -15,7 +15,7 @@ to be able to parse structured file is necessary to know the structure, there ar
 
 NOTE: do not confuse structural and data objects
 NOTE: objects with different relations and behavior can have different structural logic (e.g. xml doctype attribute is/can be different from element attribute, its keys and values are/can be organized/structured in different ways)     
-NOTE: it is possible to produce two or more different descriptions of data structure, which are all valid (depends on use case) 
+NOTE: it is possible to produce two or more different descriptions of data structure, all perfectly valid (depends on use case)
 
 stored data structure/definition
   unlike source/file data structure the stored data structure is defined quite strictly (regardless what type of file have been processed)
@@ -83,7 +83,7 @@ example of to-table method use:
   
     keys for object types:
       - Prolog = {?xml, ?XML}
-      - Doctype = {!DOCTYPE}
+      - Doctype.external = {!DOCTYPE}
       - Argument = argument is not key:value structure so it is represented by value itself, argument key is not represented in source document and have to be defined explicitly (for our example the SYSTEM is value of "keyword" argument and "dtd_file.dtd" is value of "URI" argument) 
       - Stylesheet.external = {?xml-stylesheet}
       - Element = elements name (e.g. address is name of <address></address> element)
@@ -101,7 +101,6 @@ example of to-table method use:
       - Comment = string between <!-- and -->
 
   final product: 
-
     SOURCE        OBJECT      KEY                 VALUE               PARENT_KEY      PATH
     example.xml   Prolog      ?xml                NULL                NULL            /
     example.xml   Attribute   xml_version         1.0                 ?xml            /?xml
@@ -111,7 +110,7 @@ example of to-table method use:
     example.xml   Attribute   type                text/xsl            ?xml-stylesheet /?xml-stylesheet
     example.xml   Doctype     !DOCTYPE            ROOT_element        NULL            /
     example.xml   Argument    keyword             SYSTEM              !DOCTYPE        /!DOCTYPE
-    example.xml   Argument    URI                 "dtd_file.dtd"      !DOCTYPE        /!DOCTYPE                                                                                           
+    example.xml   Argument    URI                 "dtd_file.dtd"      !DOCTYPE        /!DOCTYPE        
     example.xml   Element     ROOT_element        NULL                NULL            /ROOT_element
     example.xml   Element     L1_element_1        L1E1_text           ROOT_element    /ROOT_element/L1_element_1
     example.xml   Attribute   L1E1_attribute_1    L1E1A1_value        L1_element_1    /ROOT_element/L1_element_1
