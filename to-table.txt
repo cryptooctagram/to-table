@@ -1,0 +1,134 @@
+name: to-table
+revision: 0.1
+summary: to-table is method designed for parsing structured files (e.g. XML, JSON, YAML...) into standardized tables (relations)
+
+key capability of to-table method is to parse, translate and store content of many files into data structure which allows to:
+    - use standardized structured query languege (sql)
+    - identify and store path to/location of each object (row)
+    - re-assemble file/s from stored data (if necessary)
+
+to be able to parse structured file is necessary to know the structure, there are key steps which have to be done:
+    - identify all structural objects (types)
+    - identify key for each object type (mandatory, every object has key - name or index at least)
+    - identify values (facultative, not each object has to have value)
+    - identify relations between objects (especially hierarchy) and behavior
+
+NOTE: do not confuse structural and data objects
+NOTE: objects with different relations and behavior can have different structural logic (e.g. xml doctype attribute is/can be different from element attribute, its keys and values are/can be organized/structured in different ways)     
+NOTE: it is possible to produce two or more different descriptions of data structure, which are all valid (depends on use case) 
+
+stored data structure/definition
+  unlike source/file data structure the stored data structure is defined quite strictly (regardless what type of file have been processed)
+  to-table method define these mandatory columns: 
+  - source - fully qualified path to the file (source of data)
+  - object - name of object type (e.g. Element, Attribute)
+  - key - object key, name of instance (e.g. elements' name, attributes' key)
+  - value - content of specific object instance (e.g. tag's text, keys' value), except other elements
+  - parent_key - key of parent object instance (e.g. attributes' element) 
+  
+NOTE: is possible to store data in one or more tables, it depends on level of normalization needed or required, also use of other/custom columns is allowed
+
+FAQ:
+  is to-table method applicable to any structured file?
+    - yes, if structure is known or recognizable
+  
+  is useful to apply to-table method to any structured file?
+    - no, for example csv is structured file but there is no (or very little) benefit from transformig this file by to-table method
+
+example of to-table method use:
+
+  file type: XML
+  file name: example.xml
+
+    <?xml version="1.0" encoding="utf-8"?>
+    <?xml-stylesheet href="style.xsl" type="text/xsl"?>
+    <!DOCTYPE ROOT_element SYSTEM "dtd_file.dtd">
+    <!--In header comment-->
+    <ROOT_element>
+        <L1_element_1 L1E1_attribute_1="L1E1A1_value" L1E1_attribute_2="L1E1A2_value"> L1E1_text
+            <L2_element_1>
+                <L3_element_1 L3E1_attribute_1="L3E1A1_value" L3E1_attribute_2="L3E1A2_value" L3E1_attribute_3="L3E1A3_value">
+                    <L4_element_1>L4E1_text</L4_element_1>
+                    <L4_element_2>
+                        <!-- In body comment -->
+                        <L5_element_1>
+                            <L6_element_1>L6E1_text</L6_element_1>
+                        </L5_element_1>
+                        <L5_element_2>L5E2_text
+                            <L6_element_2 L6E2_attribute_1="L6E2A1_value">L6E2_text</L6_element_2>
+                            <L6_element_3 L6E3_attribute_1="L6E3A1_value">L6E3_text</L6_element_3>
+                        </L5_element_2>
+    				</L4_element_2>
+    			</L3_element_1>
+    		</L2_element_1>
+    	</L1_element_1>
+        <L1_element_2>
+            L2_text
+        </L1_element_2>
+    </ROOT_element>
+  
+  structure analysis of example:
+    structural objects:
+      - Prolog (version, encoding and standalone are attributes of prolog)
+      - Doctype (DOCTYPE!) - external
+      - Argument
+      - Stylesheet (external or embedded)
+      - Element
+      - Attribute
+      - Comment (in header, in body)
+      - CDATA
+      - ?PI (processing instructions)
+      NOTE: in the example are not represented CDATA and ?PI, also !DOCTYPE and ?xml-stylesheet are external only
+      NOTE: more structural object may be needed if internal !DOCTYPE will be used (e.g. !ELEMENT, !ATTLIST, !ENTITY)
+  
+    keys for object types:
+      - Prolog = {?xml, ?XML}
+      - Doctype = {!DOCTYPE}
+      - Argument = argument is not key:value structure so it is represented by value itself, argument key is not represented in source document and have to be defined explicitly (for our example the SYSTEM is value of "keyword" argument and "dtd_file.dtd" is value of "URI" argument) 
+      - Stylesheet.external = {?xml-stylesheet}
+      - Element = elements name (e.g. address is name of <address></address> element)
+      - Attribute = attribute name (e.g. encoding from attribute=value pair encoding="utf-8")
+      - Comment = {<!-- -->} 
+      NOTE: braces {} indicate list of allowed keys, dots . are used for closer specification of object if there are more options (e.g. common attribute vs doctype attribute)  
+
+    keys' values:
+      - ?xml = NULL (prolog only carry attributes, no values are in prolog itself)
+      - !DOCTYPE = only value doctype is carrying is name of root element (it's first string after !DOCTYPE notation - separated by one space)
+      - Argument = see "keys for object types"
+      - Stylesheet = NULL (stylesheet only carry attributes, no values are in stylesheet itself)
+      - Element = text between start and end tag
+      - Attribute = attribute value (e.g. utf-8 from attribute=value pair encoding="utf-8")
+      - Comment = string between <!-- and -->
+
+  final product: 
+
+    SOURCE        OBJECT      KEY                 VALUE               PARENT_KEY      PATH
+    example.xml   Prolog      ?xml                NULL                NULL            /
+    example.xml   Attribute   xml_version         1.0                 ?xml            /?xml
+    example.xml   Attribute   encoding            utf-8               ?xml            /?xml
+    example.xml   Stylesheet  ?xml-stylesheet     NULL                NULL            /
+    example.xml   Attribute   href                style.xsl           ?xml-stylesheet /?xml-stylesheet
+    example.xml   Attribute   type                text/xsl            ?xml-stylesheet /?xml-stylesheet
+    example.xml   Doctype     !DOCTYPE            ROOT_element        NULL            /
+    example.xml   Argument    keyword             SYSTEM              !DOCTYPE        /!DOCTYPE
+    example.xml   Argument    URI                 "dtd_file.dtd"      !DOCTYPE        /!DOCTYPE                                                                                           
+    example.xml   Element     ROOT_element        NULL                NULL            /ROOT_element
+    example.xml   Element     L1_element_1        L1E1_text           ROOT_element    /ROOT_element/L1_element_1
+    example.xml   Attribute   L1E1_attribute_1    L1E1A1_value        L1_element_1    /ROOT_element/L1_element_1
+    example.xml   Attribute   L1E1_attribute_2    L1E1A2_value        L1_element_1    /ROOT_element/L1_element_1
+    example.xml   Element     L2_element_1        NULL                L1_element_1    /ROOT_element/L1_element_1/L2_element_1
+    example.xml   Element     L3_element_1        NULL                L2_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Attribute   L3E1_attribute_1    L3E1A1_value        L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Attribute   L3E1_attribute_2    L3E1A2_value        L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Attribute   L3E1_attribute_3    L3E1A3_value        L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Element     L4_element_1        L4E1_text           L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_1
+    example.xml   Element     L4_element_2        NULL                L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
+    example.xml   Comment     <!-- -->            In body comment     L4_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
+    example.xml   Element     L5_element_1        NULL                L4_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_1
+    example.xml   Element     L6_element_1        L6E1_text           L5_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_1/L6_element_1
+    example.xml   Element     L5_element_2        L5E2_text           L4_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2
+    example.xml   Element     L6_element_2        L6E2_text           L5_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_2
+    example.xml   Attribute   L6E2_attribute_1    L6E2A1_value        L6_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_2
+    example.xml   Element     L6_element_3        L6E3_text           L5_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_3
+    example.xml   Attribute   L6E3_attribute_1    L6E3A1_value        L6_element_3    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_3
+    example.xml   Element     L1_element_2        L2_text             ROOT_element    /ROOT_element/L1_element_2
