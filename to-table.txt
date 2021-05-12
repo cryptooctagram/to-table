@@ -1,5 +1,5 @@
 name: to-table
-revision: 0.1.1
+revision: 0.1.9
 summary: to-table is method designed for parsing structured files (e.g. XML, JSON, YAML...) into standardized tables (relations)
 
 key capability of to-table method is to parse, translate and store content of many files into data structure which allows to:
@@ -24,7 +24,7 @@ stored data structure/definition
   - object - name of object type (e.g. Element, Attribute)
   - key - object key, name of instance (e.g. elements' name, attributes' key)
   - value - content of specific object instance (e.g. tag's text, keys' value), except other elements
-  - parent_key - key of parent object instance (e.g. attributes' element) 
+  - path - path to the key in source/file data structure (end/leaf of path is key of parent object instance e.g. attributes' element)
   
 NOTE: is possible to store data in one or more tables, it depends on level of normalization needed or required, also use of other/custom columns is allowed
 
@@ -101,33 +101,33 @@ example of to-table method use:
       - Comment = string between <!-- and -->
 
   final product: 
-    SOURCE        OBJECT      KEY                 VALUE               PARENT_KEY      PATH
-    example.xml   Prolog      ?xml                NULL                NULL            /
-    example.xml   Attribute   xml_version         1.0                 ?xml            /?xml
-    example.xml   Attribute   encoding            utf-8               ?xml            /?xml
-    example.xml   Stylesheet  ?xml-stylesheet     NULL                NULL            /
-    example.xml   Attribute   href                style.xsl           ?xml-stylesheet /?xml-stylesheet
-    example.xml   Attribute   type                text/xsl            ?xml-stylesheet /?xml-stylesheet
-    example.xml   Doctype     !DOCTYPE            ROOT_element        NULL            /
-    example.xml   Argument    keyword             SYSTEM              !DOCTYPE        /!DOCTYPE
-    example.xml   Argument    URI                 "dtd_file.dtd"      !DOCTYPE        /!DOCTYPE        
-    example.xml   Element     ROOT_element        NULL                NULL            /ROOT_element
-    example.xml   Element     L1_element_1        L1E1_text           ROOT_element    /ROOT_element/L1_element_1
-    example.xml   Attribute   L1E1_attribute_1    L1E1A1_value        L1_element_1    /ROOT_element/L1_element_1
-    example.xml   Attribute   L1E1_attribute_2    L1E1A2_value        L1_element_1    /ROOT_element/L1_element_1
-    example.xml   Element     L2_element_1        NULL                L1_element_1    /ROOT_element/L1_element_1/L2_element_1
-    example.xml   Element     L3_element_1        NULL                L2_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
-    example.xml   Attribute   L3E1_attribute_1    L3E1A1_value        L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
-    example.xml   Attribute   L3E1_attribute_2    L3E1A2_value        L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
-    example.xml   Attribute   L3E1_attribute_3    L3E1A3_value        L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1
-    example.xml   Element     L4_element_1        L4E1_text           L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_1
-    example.xml   Element     L4_element_2        NULL                L3_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
-    example.xml   Comment     <!-- -->            In body comment     L4_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
-    example.xml   Element     L5_element_1        NULL                L4_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_1
-    example.xml   Element     L6_element_1        L6E1_text           L5_element_1    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_1/L6_element_1
-    example.xml   Element     L5_element_2        L5E2_text           L4_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2
-    example.xml   Element     L6_element_2        L6E2_text           L5_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_2
-    example.xml   Attribute   L6E2_attribute_1    L6E2A1_value        L6_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_2
-    example.xml   Element     L6_element_3        L6E3_text           L5_element_2    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_3
-    example.xml   Attribute   L6E3_attribute_1    L6E3A1_value        L6_element_3    /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_3
-    example.xml   Element     L1_element_2        L2_text             ROOT_element    /ROOT_element/L1_element_2
+    SOURCE        OBJECT      KEY                 VALUE               PATH
+    example.xml   Prolog      ?xml                NULL                /
+    example.xml   Attribute   xml_version         1.0                 /?xml
+    example.xml   Attribute   encoding            utf-8               /?xml
+    example.xml   Stylesheet  ?xml-stylesheet     NULL                /
+    example.xml   Attribute   href                style.xsl           /?xml-stylesheet
+    example.xml   Attribute   type                text/xsl            /?xml-stylesheet
+    example.xml   Doctype     !DOCTYPE            ROOT_element        /
+    example.xml   Argument    keyword             SYSTEM              /!DOCTYPE
+    example.xml   Argument    URI                 "dtd_file.dtd"      /!DOCTYPE        
+    example.xml   Element     ROOT_element        NULL                /
+    example.xml   Element     L1_element_1        L1E1_text           /ROOT_element
+    example.xml   Attribute   L1E1_attribute_1    L1E1A1_value        /ROOT_element/L1_element_1
+    example.xml   Attribute   L1E1_attribute_2    L1E1A2_value        /ROOT_element/L1_element_1
+    example.xml   Element     L2_element_1        NULL                /ROOT_element/L1_element_1
+    example.xml   Element     L3_element_1        NULL                /ROOT_element/L1_element_1/L2_element_1
+    example.xml   Attribute   L3E1_attribute_1    L3E1A1_value        /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Attribute   L3E1_attribute_2    L3E1A2_value        /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Attribute   L3E1_attribute_3    L3E1A3_value        /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Element     L4_element_1        L4E1_text           /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Element     L4_element_2        NULL                /ROOT_element/L1_element_1/L2_element_1/L3_element_1
+    example.xml   Comment     <!-- -->            In body comment     /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
+    example.xml   Element     L5_element_1        NULL                /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
+    example.xml   Element     L6_element_1        L6E1_text           /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_1
+    example.xml   Element     L5_element_2        L5E2_text           /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2
+    example.xml   Element     L6_element_2        L6E2_text           /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2
+    example.xml   Attribute   L6E2_attribute_1    L6E2A1_value        /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_2
+    example.xml   Element     L6_element_3        L6E3_text           /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2
+    example.xml   Attribute   L6E3_attribute_1    L6E3A1_value        /ROOT_element/L1_element_1/L2_element_1/L3_element_1/L4_element_2/L5_element_2/L6_element_3
+    example.xml   Element     L1_element_2        L2_text             /ROOT_element
